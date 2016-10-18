@@ -383,7 +383,7 @@ PTA<-PTA3(IBTS_logscale, nbPT = 3, nbPT2 = 3, minpct = 0.1)
  ---Final iteration---  92 
  --Singular Value--  13.52781  -- Local Percent --  5.369746 % 
 
- -----Execution Time----- 0.443 
+ -----Execution Time----- 0.468 
 ```
 
 ```r
@@ -517,7 +517,6 @@ text(0,max(coo[,4])+0.02, labkeep[1], xpd=NA, cex=1.5)
 ```
 
 ![](figures/unnamed-chunk-27-1.png)<!-- -->
-
 
 ##Summary
 ![ ](figures/Summary.png)
