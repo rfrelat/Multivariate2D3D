@@ -1,4 +1,4 @@
-# From 2D PCA to 3D PTA
+# Multivariate analysis : from 2D PCA to 3D PTA
 Romain Frelat  
 20 october 2016  
 
@@ -63,30 +63,8 @@ Abundance data comes from the ICES DAtabase for TRAwl Surveys (DATRAS; http://da
 ### Understanding the variables
 While loading the data, we saw two different type of variables, quite unusual in R : array and lists.
 
-####List
-List can contain all kind of elements, not all of the same lenght, or of the same type (could be characters or numbers). The number of elements is given by function is `length()`, and the different elements are accessed by `[[ ]]`. The names of the dimensions of the variable `IBTS_tensor` is a list. 
-
-```r
-length(dimnames(IBTS_tensor))
-```
-
-```
-[1] 3
-```
-
-```r
-dimnames(IBTS_tensor)[[2]] #show the second element of the list
-```
-
-```
- [1] "1985" "1986" "1987" "1988" "1989" "1990" "1991" "1992" "1993" "1994"
-[11] "1995" "1996" "1997" "1998" "1999" "2000" "2001" "2002" "2003" "2004"
-[21] "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012" "2013" "2014"
-[31] "2015"
-```
-
 ####Array
-Array is a generalization of matrices, in higher number of dimension. It can only contain numbers. The dimmension of the array is given by the function is `dim()`, and the different elements are accessed with `[ ]`, similar to a matrix or a data.frame : 
+The object `IBTS_Tensor` is an array. Array is generalization of matrix, with higher number of dimensions. It can only contain numbers. The dimmension of the array is given by the function is `dim()`, and the different elements are accessed with `[ ]`, similar to a matrix or a data.frame : 
 
 ```r
 dim(IBTS_tensor)
@@ -137,6 +115,29 @@ IBTS_tensor[18,,]#Select one matrix, e.g. abundance of Cod
 1990 63.41066 62.33348 43.45058  46.30503 28.29797  22.41453 46.94964
 ```
 
+####List
+The names of the dimensions of `IBTS_Tensor` are stored in a list. List can contain all kind of elements, not all of the same lenght, or of the same type (could be characters or numbers). The number of elements is given by function is `length()`, and the different elements are accessed by `[[ ]]`. The names of the dimensions of the variable `IBTS_tensor` is a list. 
+
+```r
+names_tensor <- dimnames(IBTS_tensor) # the list of names is stored in a new variable
+length(names_tensor)
+```
+
+```
+[1] 3
+```
+
+```r
+names_tensor[[2]] #show the second element of the list
+```
+
+```
+ [1] "1985" "1986" "1987" "1988" "1989" "1990" "1991" "1992" "1993" "1994"
+[11] "1995" "1996" "1997" "1998" "1999" "2000" "2001" "2002" "2003" "2004"
+[21] "2005" "2006" "2007" "2008" "2009" "2010" "2011" "2012" "2013" "2014"
+[31] "2015"
+```
+
 ### Your turn : 
 1. What is the index of Hake (Merluccius merluccius) in the dataset ?
 2. What is the abondance of Hake (Merluccius merluccius) in 1988 in RA 1 ?
@@ -157,19 +158,21 @@ IBTS_tensor[18,,]#Select one matrix, e.g. abundance of Cod
 
 ```r
 #1
-which(dimnames(IBTS_tensor)[[1]]=="Merluccius merluccius")
+which(names_tensor[[1]]=="Merluccius merluccius")
 #2
 IBTS_tensor[33,4,1]
 #3
 IBTS_tensor[33,26:31,1]
 #4
-plot(dimnames(IBTS_tensor)[[2]], IBTS_tensor[33,,1], type="l", 
+plot(names_tensor[[2]], IBTS_tensor[33,,1], type="l", 
      xlab="Time", ylab="CPUE (n/h)", main="Abundance of Hake in RA1")
 ```
 
 ***
 
 ##B. Two dimensions : Principal Component Analysis
+
+![ ](figures/2DPCA_illu.png)
 
 ### Preparing the dataset
 
@@ -220,6 +223,7 @@ To choose the right number of PC to be kept, there are many conflicting methods.
 ```r
 pca_space=dudi.pca(IBTS_logspace, scale = TRUE, center = TRUE)
 ```
+
 **Select the number of axes: **
 
 ![](figures/unnamed-chunk-15-1.png)<!-- -->
@@ -293,7 +297,7 @@ dist_species=dist(pca_space$co, method = "euclidean")
 den=hclust(dist_species,method = "ward.D2")
 
 #3. Plot the dendogram
-par(mfrow=c(1,1))
+par(mar=c(2,3,3,1))
 plot(den, hang=-1, ax = T, ann=T, xlab="", sub="", cex=0.6)
 
 #Choosing the number of cluster
@@ -305,18 +309,43 @@ rect.hclust(den, k=nclust, border="dimgrey")
 
 ![](figures/unnamed-chunk-18-1.png)<!-- -->
 
+There are different linkage criterions (criterion used to group, or split, two objects). The most common ones are: *Single* (minimum distance between elements of each cluster ), *Complete* (maximum distance between elements of each cluster), *Average* (mean distance between elements of each cluster, also called UPGMA) and *Ward* (decrease in variance for the cluster being merged). *Ward* linkage is known to be more suitable for spherical data, and in most of the case, gives the best results. I invite you to try other linkage criterions by changing the parameter `method = ` in the function `hclust`. Do you find the same clusters?  
+
+In the above graph, the question is where to put a horizontal line on the dendogram to create the clusters. The number of clusters should not be too sensitive of the height of the bar. In our case, 5 clusters seem appropriate. We can now visualize how the hierarchical clustering grouped the species in 5 clusters on the two first PC.
+
+
 ```r
-#Create the clusters
+#4. Create the clusters
 clust_space <- as.factor(cutree(den, k=nclust))
 
-#Visaualize the cluster in the PC axis
+#Visualize the cluster in the PC axis
 s.class(pca_space$co,fac=clust_space, col=rainbow(nclust),xax=1,yax=2)
 ```
 
-![](figures/unnamed-chunk-18-2.png)<!-- -->
+![](figures/unnamed-chunk-19-1.png)<!-- -->
+
+These clusters should be interpreted with the previous interpretation of the PC. For example, 
+
+* Cluster 1 (in red) has high value in PC1, and above average value in PC2. So it groups species that lives in the southern north sea (high PC1), with a preference in the south-western side (high PC2).  
+* Cluster 2  (in yellow in the graph above) groups species mainly located in entrance to the Skagerrak, RA7 (low PC2) but that can spread in the north (low PC1). This cluster is heterogeneous, with the largest ellipse in the figure above.  
+* Cluster 3 (in green) groups species mainly located in southern NS (high PC1), with a preference on its eastern side (low PC2).  
+
+### Your turn : 
+1. How would you interpret the clusters 4 and 5 ?
+2. How many species are located mainly in the south-western (RA 5) of the north sea (i.e. grouped in cluster 1) ?
+3. In which cluster is grouped Saithe (*Pollachius virens*)?
+4. Depending on your time and your interest, you can either : 
+    + change the initial matrix and run the same analysis, but categorizing species on their average temporal variation with the matrix defined as : `IBTS_time <- apply(IBTS_tensor,c(2,1),mean)`
+    + change the linkage method in the clustering algorithm and compare the clusters
+    + or go directly to the next step : multivariate analysis in 3 dimension.
+
+#### Solution
+1. Cluster 4 (in blue) groups species spread exclusively in the northern NS (high PC1 and high PC2). Cluster 5 (in purple) groups species in majority either in the northern extremity (RA1) or the southwestern community (RA5) but not in RA 7 (high PC2)
+
 
 ```r
-table(clust_space)
+#2.
+table(clust_space) #There are 14 species in cluster 1
 ```
 
 ```
@@ -325,9 +354,24 @@ clust_space
 14 13 12 17  9 
 ```
 
+```r
+#3.
+clust_space[names_tensor[[1]]=="Pollachius virens"] #Saithe is in cluster 4
+```
+
+```
+Pollachius virens 
+                4 
+Levels: 1 2 3 4 5
+```
+
+
 ***
 
 ## C. Three dimension : Tensor Decomposition
+
+![ ](figures/3DPTA_illu.png)  
+
 
 ### Preparing the dataset
 
@@ -344,7 +388,7 @@ IBTS_logtensor <- log(IBTS_tensor+1)
 boxplot(IBTS_logtensor, main="log CPUE")
 ```
 
-![](figures/unnamed-chunk-20-1.png)<!-- -->
+![](figures/unnamed-chunk-22-1.png)<!-- -->
 
 #### Scaling the data
 Contrary to PCA, the normalization of a tensor is not straightforward, and have to be done manually before running a PTA. Here, we decided to narmalized the values per species.
@@ -383,7 +427,7 @@ PTA<-PTA3(IBTS_logscale, nbPT = 3, nbPT2 = 3, minpct = 0.1)
  ---Final iteration---  92 
  --Singular Value--  13.52781  -- Local Percent --  5.369746 % 
 
- -----Execution Time----- 0.468 
+ -----Execution Time----- 0.475 
 ```
 
 ```r
@@ -435,7 +479,7 @@ barplot(sort(gct, decreasing = TRUE), xlab="PT",
         ylab="Percentage of variance")
 ```
 
-![](figures/unnamed-chunk-23-1.png)<!-- -->
+![](figures/unnamed-chunk-25-1.png)<!-- -->
 
 ####Interpretation of PT.
 The ploting function per default allow to use the argument `mod` to select which dimension to plot, `nb1` and `nb2` to select which PT will be shown on x-axis and y-axis.
@@ -447,7 +491,7 @@ plot(PTA, mod=c(2,3), nb1 = 1, nb2 = 11, xpd=NA)
 plot(PTA, mod=1, nb1 = 1, nb2 = 11)
 ```
 
-![](figures/unnamed-chunk-24-1.png)<!-- -->
+![](figures/unnamed-chunk-26-1.png)<!-- -->
 
 You can explore further what are the main characteristics of the PT, which are number 1, 6, 7 and 11. Another way is to use a 2D representation of the projection
 
@@ -470,7 +514,7 @@ for (i in seq_along(keep)){
 }
 ```
 
-![](figures/unnamed-chunk-25-1.png)<!-- -->
+![](figures/unnamed-chunk-27-1.png)<!-- -->
 
 ###Clustering
 We use the same approach as before, but with the species projected on the 4 PT.
@@ -496,7 +540,7 @@ nclust<-6
 rect.hclust(den, k=nclust, border=rainbow(nclust)[c(6,5,2,4,3,1)])
 ```
 
-![](figures/unnamed-chunk-26-1.png)<!-- -->
+![](figures/unnamed-chunk-28-1.png)<!-- -->
 
 
 ```r
@@ -516,7 +560,7 @@ text(min(coo[,1])-0.03,0, labkeep[4], srt=90, xpd=NA, cex=1.5)
 text(0,max(coo[,4])+0.02, labkeep[1], xpd=NA, cex=1.5)
 ```
 
-![](figures/unnamed-chunk-27-1.png)<!-- -->
+![](figures/unnamed-chunk-29-1.png)<!-- -->
 
 ##Summary
 ![ ](figures/Summary.png)

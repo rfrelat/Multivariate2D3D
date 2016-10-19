@@ -1,5 +1,5 @@
 ---
-title: "From 2D PCA to 3D PTA"
+title: "Multivariate analysis : from 2D PCA to 3D PTA"
 author: "Romain Frelat"
 date: "20 october 2016"
 output:  
@@ -27,15 +27,13 @@ At the end of this workshop, you should be able to :
 4. Set the working directory (Session > Set Working Directory) to the directory where the the data and the script are.
 
 ####Load the package and needed functions
-For this work, we will need to use three package [ade4], [PTAk] and [RColorBrewer].
+For this work, we will need to use two package [ade4] and [PTAk].
 ```{r, message=FALSE, fig.path='figures/'}
 library(ade4)
 library(PTAk)
-library(RColorBrewer)
-source("Myheatmap.R") #load a home made function to plot a heatmap
 ```
 
-If you have an error message, please be sure the packages are installed. If not, use the  function `install.packages(c("ade4", "PTAk", "RColorBrewer"))`.
+If you have an error message, please be sure the packages are installed. If not, use the  function `install.packages(c("ade4", "PTAk")`.
 
 
 ### Load the dataset
@@ -61,15 +59,8 @@ Abundance data comes from the ICES DAtabase for TRAwl Surveys (DATRAS; http://da
 ### Understanding the variables
 While loading the data, we saw two different type of variables, quite unusual in R : array and lists.
 
-####List
-List can contain all kind of elements, not all of the same lenght, or of the same type (could be characters or numbers). The number of elements is given by function is `length()`, and the different elements are accessed by `[[ ]]`. The names of the dimensions of the variable `IBTS_tensor` is a list. 
-```{r, comment ="", fig.path='figures/'}
-length(dimnames(IBTS_tensor))
-dimnames(IBTS_tensor)[[2]] #show the second element of the list
-```
-
 ####Array
-Array is a generalization of matrices, in higher number of dimension. It can only contain numbers. The dimmension of the array is given by the function is `dim()`, and the different elements are accessed with `[ ]`, similar to a matrix or a data.frame : 
+The object `IBTS_Tensor` is an array. Array is generalization of matrix, with higher number of dimensions. It can only contain numbers. The dimmension of the array is given by the function is `dim()`, and the different elements are accessed with `[ ]`, similar to a matrix or a data.frame : 
 ```{r, comment ="", fig.path='figures/'}
 dim(IBTS_tensor)
 IBTS_tensor[18,14,6]#Select one element, e.g. Abundance of Cod, in 1998, in RA6
@@ -82,6 +73,14 @@ IBTS_tensor[18,,]#Select one matrix, e.g. abundance of Cod
 head(IBTS_tensor[18,,])
 ```
 
+####List
+The names of the dimensions of `IBTS_Tensor` are stored in a list. List can contain all kind of elements, not all of the same lenght, or of the same type (could be characters or numbers). The number of elements is given by function is `length()`, and the different elements are accessed by `[[ ]]`. The names of the dimensions of the variable `IBTS_tensor` is a list. 
+```{r, comment ="", fig.path='figures/'}
+names_tensor <- dimnames(IBTS_tensor) # the list of names is stored in a new variable
+length(names_tensor)
+names_tensor[[2]] #show the second element of the list
+```
+
 ### Your turn : 
 1. What is the index of Hake (Merluccius merluccius) in the dataset ?
 2. What is the abondance of Hake (Merluccius merluccius) in 1988 in RA 1 ?
@@ -89,29 +88,31 @@ head(IBTS_tensor[18,,])
 4. Can you show the evolution of Hake abondance between 1985 and 2015 in RA 1?
 
 ```{r, echo = FALSE, collapse=TRUE, comment ="", fig.path='figures/'}
-which(dimnames(IBTS_tensor)[[1]]=="Merluccius merluccius")
+which(names_tensor[[1]]=="Merluccius merluccius")
 IBTS_tensor[33,4,1]
 IBTS_tensor[33,26:31,1]
-plot(dimnames(IBTS_tensor)[[2]], IBTS_tensor[33,,1], type="l", 
+plot(names_tensor[[2]], IBTS_tensor[33,,1], type="l", 
      xlab="Time", ylab="CPUE (n/h)", main="Abundance of Hake in RA1")
 ```
 
 #### Solution
 ```{r, eval = FALSE, collapse=TRUE, comment ="", fig.path='figures/'}
 #1
-which(dimnames(IBTS_tensor)[[1]]=="Merluccius merluccius")
+which(names_tensor[[1]]=="Merluccius merluccius")
 #2
 IBTS_tensor[33,4,1]
 #3
 IBTS_tensor[33,26:31,1]
 #4
-plot(dimnames(IBTS_tensor)[[2]], IBTS_tensor[33,,1], type="l", 
+plot(names_tensor[[2]], IBTS_tensor[33,,1], type="l", 
      xlab="Time", ylab="CPUE (n/h)", main="Abundance of Hake in RA1")
 ```
 
 ***
 
 ##B. Two dimensions : Principal Component Analysis
+
+![ ](figures/2DPCA_illu.png)
 
 ### Preparing the dataset
 
@@ -170,6 +171,7 @@ To choose the right number of PC to be kept, there are many conflicting methods.
 ```{r, eval=FALSE, fig.path='figures/'}
 pca_space=dudi.pca(IBTS_logspace, scale = TRUE, center = TRUE)
 ```
+
 **Select the number of axes: **
 
 ```{r, echo=FALSE, comment ="", fig.height=4, fig.width=6, fig.path='figures/'}
@@ -209,7 +211,7 @@ It works in 4 steps :
 3. Choose the number of cluster depending on the topology of the dendogram,
 4. Create the clusters and interpret them
 
-```{r, comment ="", fig.path='figures/'}
+```{r, comment ="", fig.path='figures/', fig.height=5, fig.width=6}
 #1. Compute the distance between species
 dist_species=dist(pca_space$co, method = "euclidean")
 
@@ -217,7 +219,7 @@ dist_species=dist(pca_space$co, method = "euclidean")
 den=hclust(dist_species,method = "ward.D2")
 
 #3. Plot the dendogram
-par(mfrow=c(1,1))
+par(mar=c(2,3,3,1))
 plot(den, hang=-1, ax = T, ann=T, xlab="", sub="", cex=0.6)
 
 #Choosing the number of cluster
@@ -225,18 +227,52 @@ nclust<-5
 
 #Visualize the cutting
 rect.hclust(den, k=nclust, border="dimgrey")
+```
 
-#Create the clusters
+There are different linkage criterions (criterion used to group, or split, two objects). The most common ones are: *Single* (minimum distance between elements of each cluster ), *Complete* (maximum distance between elements of each cluster), *Average* (mean distance between elements of each cluster, also called UPGMA) and *Ward* (decrease in variance for the cluster being merged). *Ward* linkage is known to be more suitable for spherical data, and in most of the case, gives the best results. I invite you to try other linkage criterions by changing the parameter `method = ` in the function `hclust`. Do you find the same clusters?  
+
+In the above graph, the question is where to put a horizontal line on the dendogram to create the clusters. The number of clusters should not be too sensitive of the height of the bar. In our case, 5 clusters seem appropriate. We can now visualize how the hierarchical clustering grouped the species in 5 clusters on the two first PC.
+
+```{r, comment ="", fig.path='figures/'}
+#4. Create the clusters
 clust_space <- as.factor(cutree(den, k=nclust))
 
-#Visaualize the cluster in the PC axis
+#Visualize the cluster in the PC axis
 s.class(pca_space$co,fac=clust_space, col=rainbow(nclust),xax=1,yax=2)
-table(clust_space)
 ```
+
+These clusters should be interpreted with the previous interpretation of the PC. For example, 
+
+* Cluster 1 (in red) has high value in PC1, and above average value in PC2. So it groups species that lives in the southern north sea (high PC1), with a preference in the south-western side (high PC2).  
+* Cluster 2  (in yellow in the graph above) groups species mainly located in entrance to the Skagerrak, RA7 (low PC2) but that can spread in the north (low PC1). This cluster is heterogeneous, with the largest ellipse in the figure above.  
+* Cluster 3 (in green) groups species mainly located in southern NS (high PC1), with a preference on its eastern side (low PC2).  
+
+### Your turn : 
+1. How would you interpret the clusters 4 and 5 ?
+2. How many species are located mainly in the south-western (RA 5) of the north sea (i.e. grouped in cluster 1) ?
+3. In which cluster is grouped Saithe (*Pollachius virens*)?
+4. Depending on your time and your interest, you can either : 
+    + change the initial matrix and run the same analysis, but categorizing species on their average temporal variation with the matrix defined as : `IBTS_time <- apply(IBTS_tensor,c(2,1),mean)`
+    + change the linkage method in the clustering algorithm and compare the clusters
+    + or go directly to the next step : multivariate analysis in 3 dimension.
+
+#### Solution
+1. Cluster 4 (in blue) groups species spread exclusively in the northern NS (high PC1 and high PC2). Cluster 5 (in purple) groups species in majority either in the northern extremity (RA1) or the southwestern community (RA5) but not in RA 7 (high PC2)
+
+```{r, comment ="", fig.path='figures/'}
+#2.
+table(clust_space) #There are 14 species in cluster 1
+#3.
+clust_space[names_tensor[[1]]=="Pollachius virens"] #Saithe is in cluster 4
+```
+
 
 ***
 
 ## C. Three dimension : Tensor Decomposition
+
+![ ](figures/3DPTA_illu.png)  
+
 
 ### Preparing the dataset
 
@@ -308,23 +344,8 @@ plot(PTA, mod=1, nb1 = 1, nb2 = 11)
 
 You can explore further what are the main characteristics of the PT, which are number 1, 6, 7 and 11. Another way is to use a 2D representation of the projection
 
-```{r, comment ="", fig.path='figures/'}
-#Define which PT have been selected
-keep <- c(1, 6, 7, 11)
+![ ](figures/PTA_Inter.png)  
 
-#Create the name of each PT
-labkeep <- paste0(paste0("PT", 1:4), " - ", 
-                  round((100 * (PTA[[3]]$d[keep])^2)/PTA[[3]]$ssX[1],1), "%")
-
-#Make the plot
-par(mfrow=c(2,2), mar = c(3,3,3,1))
-for (i in seq_along(keep)){
-  lab <- labkeep[i]
-  temp <- PTA[[3]]$v[keep[i],] %o% PTA[[2]]$v[keep[i],]
-  dimnames(temp) <- list(dimnames(IBTS_tensor)[[3]], dimnames(IBTS_tensor)[[2]])
-  myHeatmap(temp, pal="BrBG", title=lab, colscale = FALSE, mary = -3)
-}
-```
 
 ###Clustering
 We use the same approach as before, but with the species projected on the 4 PT.
@@ -366,5 +387,9 @@ text(min(coo[,1])-0.03,0, labkeep[4], srt=90, xpd=NA, cex=1.5)
 text(0,max(coo[,4])+0.02, labkeep[1], xpd=NA, cex=1.5)
 ```
 
+![ ](figures/PTA_GroupInter.png)  
+
 ##Summary
+
+Multivariate analysis 
 ![ ](figures/Summary.png)
