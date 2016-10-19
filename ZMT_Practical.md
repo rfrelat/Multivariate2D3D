@@ -1,40 +1,40 @@
-# Multivariate analysis : from 2D PCA to 3D PTA
+# Multivariate analysis: from 2D PCA to 3D PTA
 Romain Frelat  
 20 october 2016  
 
-## Objectives :
-At the end of this workshop, you should be able to :
+## Objectives:
+At the end of this workshop, you should be able to:
 
 *	Run a Principal component analysis (PCA) on a matrix (2D)
-* Interpret main Principal Components (PC)
+* Interpret the Principal Components (PC)
 * Run a Principal tensor analysis (PTA) on a array (3D)
-* Interpret main Principal Tensor (PT)
+* Interpret the Principal Tensor (PT)
 *	Run a clustering analysis with Hierarchical Clustering 
-* Get an understanding of what is a multivariate analysis, and when it can be usefull
 
-##A. Getting ready :
+* **Understand what is a multivariate analysis, and when it can be useful**
 
-####Get ready :
+##A. Getting ready:
 
-1. Start RStudio (double click on the icon)  
-2. Create a new script (Ctrl+Shift+N)  
-3. Get the data file (*IBTS_Tensor.Rdata*), and the two R-scripts   
-4. Set the working directory (Session > Set Working Directory) to the directory where the the data and the script are.
+###Get ready:
 
-####Load the package and needed functions
-For this work, we will need to use three package [ade4], [PTAk] and [RColorBrewer].
+1. Get the zip file *Multivariate2D3D.zip* (can be downloaded: https://github.com/rfrelat/Multivariate2D3D/)
+2. Unzip the archive in a new folder. The zip file contain the data (*IBTS_Tensor.Rdata*), the R-script (*script_Multivariate2D3D.R*) and the present document as a pdf
+3. Open the R script *script_Multivariate2D3D.R* with your favourite R editor (RStudio is recommended)
+4. Be sure to set the working directory (Session > Set Working Directory) to the directory where the script and the data are.
+
+###Load the package and needed functions
+For this work, we will need to use two package *ade4* and *PTAk*.
 
 ```r
 library(ade4)
 library(PTAk)
-library(RColorBrewer)
-source("Myheatmap.R") #load a home made function to plot a heatmap
 ```
 
-If you have an error message, please be sure the packages are installed. If not, use the  function `install.packages(c("ade4", "PTAk", "RColorBrewer"))`.
+If you have an error message, check if the packages are installed. If not, use the function `install.packages(c("ade4", "PTAk")`.
 
 
 ### Load the dataset
+The data is a *Rdata* file, that can be loaded with the function `load()`.
 
 ```r
 load("IBTS_Tensor.Rdata")
@@ -44,8 +44,8 @@ dim(IBTS_tensor)
 ```
 [1] 65 31  7
 ```
-You loaded a variable called `IBTS_tensor` which is an array with three dimension : 65 fish species in the first dimension, 31 years in the second dimension, and 7 roundfish areas (RA) in the third dimension.
-To see the names of the dimension, you can type :
+You loaded a variable called `IBTS_tensor` which is an array with three dimension: 65 fish species in the first dimension, 31 years in the second dimension, and 7 roundfish areas (RA) in the third dimension.
+To see the names of the dimension, you can type:
 
 ```r
 dimnames(IBTS_tensor)
@@ -61,10 +61,10 @@ Abundance data comes from the ICES DAtabase for TRAwl Surveys (DATRAS; http://da
 ***
 
 ### Understanding the variables
-While loading the data, we saw two different type of variables, quite unusual in R : array and lists.
+While loading the data, we saw two different type of variables, quite unusual in R: array and list.
 
 ####Array
-The object `IBTS_Tensor` is an array. Array is generalization of matrix, with higher number of dimensions. It can only contain numbers. The dimmension of the array is given by the function is `dim()`, and the different elements are accessed with `[ ]`, similar to a matrix or a data.frame : 
+The object `IBTS_Tensor` is an array. Array is generalization of matrix, with more than 2 dimensions. It can only contain numbers. The dimension of the array is given by the function is `dim()`, and the different elements are accessed with `[ ]`, similar to a matrix or a data.frame: 
 
 ```r
 dim(IBTS_tensor)
@@ -116,11 +116,12 @@ IBTS_tensor[18,,]#Select one matrix, e.g. abundance of Cod
 ```
 
 ####List
-The names of the dimensions of `IBTS_Tensor` are stored in a list. List can contain all kind of elements, not all of the same lenght, or of the same type (could be characters or numbers). The number of elements is given by function is `length()`, and the different elements are accessed by `[[ ]]`. The names of the dimensions of the variable `IBTS_tensor` is a list. 
+The names of the dimensions of `IBTS_Tensor` are stored in a list. List can contain all kind of elements, without restriction on length or type (can be elements of different lengths made of characters or numbers). The number of elements is given by function is `length()`, and the different elements are accessed by `[[ ]]`.
+
 
 ```r
 names_tensor <- dimnames(IBTS_tensor) # the list of names is stored in a new variable
-length(names_tensor)
+length(names_tensor) #there are three elements in the list, one element for each dimension
 ```
 
 ```
@@ -138,12 +139,21 @@ names_tensor[[2]] #show the second element of the list
 [31] "2015"
 ```
 
-### Your turn : 
-1. What is the index of Hake (Merluccius merluccius) in the dataset ?
-2. What is the abondance of Hake (Merluccius merluccius) in 1988 in RA 1 ?
-3. What is the abondance of Hake between 2010 and 2015 in RA 1?
-4. Can you show the evolution of Hake abondance between 1985 and 2015 in RA 1?
+```r
+names_tensor[[1]][18]#show the 18th element of the first element of the list
+```
 
+```
+[1] "Gadus morhua"
+```
+
+### Your turn: 
+1. What is the index of Hake (Merluccius merluccius) in the dataset ?
+2. What is the abundance of Hake (Merluccius merluccius) in 1988 in RA 1 ?
+3. What is the abundance of Hake between 2010 and 2015 in RA 1?
+4. Can you show the evolution of Hake abundance between 1985 and 2015 in RA 1?
+
+You should get something like:
 
 ```
 [1] 33
@@ -170,19 +180,20 @@ plot(names_tensor[[2]], IBTS_tensor[33,,1], type="l",
 
 ***
 
-##B. Two dimensions : Principal Component Analysis
+##B. Two dimensions: Principal Component Analysis
 
 ![ ](figures/2DPCA_illu.png)
 
 ### Preparing the dataset
 
 #### From 3D to 2D
-The abondance of fishes will be average over the period 1985-2015. We will loose the temporal information, and only look at the spatial differences between the species.
-We create a new matrix `IBTS_space` which contain the average abondance for the 7 RA (in rows) and 65 species (in columns).
+The tensor is flattened into a 2D matrix. This section will study the spatial distribution of fishes in the North Sea. The abundance of fishes will be average over the period 1985-2015, losing the temporal information from the original dataset.
+
+We create a new matrix `IBTS_space` which contain the average abundance for the 7 RA (in rows) and 65 species (in columns).
 
 ```r
 IBTS_space <- apply(IBTS_tensor,c(3,1),mean)
-dim(IBTS_space)
+dim(IBTS_space) #the new matrix has 7 rows (areas) and 65 columns (species)
 [1]  7 65
 ```
 
@@ -196,24 +207,24 @@ boxplot(as.vector(IBTS_space), main="raw CPUE")
 #The CPUE is very skewed, one can not see the difference between the 1st quarter, the median and the 3rd quarter
 #So data should be log transformed
 IBTS_logspace <- log(IBTS_space+1)
-#The new distribution of the log tranformed CPUE
+#The new distribution of the log transformed CPUE
 boxplot(as.vector(IBTS_logspace), main="log CPUE")
 ```
 
 ![](figures/unnamed-chunk-12-1.png)<!-- -->
 
 #### Scaling the data
-A Principal Components Analysis normalize (i.e. center and scale) the variables. It is important to keep that step in mind. An illustration of the normalisation is given in the figures below. 
+The function used to run Principal Components Analysis normalized (i.e. center and scale) the variables by default. It is important to keep that step in mind. An illustration of the normalisation is given in the figures below. 
 ![](figures/unnamed-chunk-13-1.png)<!-- -->
 
-### Run a PCA
+### Principal Component Analysis
 
-#### Run the PCA and choosing the number of PC.
-The PCA is run with the function `dudi.pca`. The data is normalized so the options `scale` and `center` are set to `TRUE`. The function is interactive, showing you the plot of the variance explained by the successive Principal Components (PC)
+#### Run a PCA and choose the correct number of PC.
+The PCA is run with the function `dudi.pca`. The data is normalized with the options `scale` and `center` set to `TRUE`. The function is interactive, showing you a scree plot: the variance explained by the successive Principal Components (PC)
 
 ***
 
-To choose the right number of PC to be kept, there are many conflicting methods. The one I recommend is the scree test (Cattell, 1966): detect graphically a bend in the distribution of the successive variance explained. As a comparison, a PCA run on random data will not find *strong* PC, i.e. PC can not reduce dimensionality of the data. On the contrary, in real world data, usually we have a bend between successive variance explained by PC. Before the bend, the PCs reduce well the dimensionality of the data (i.e. there is a pattern); after the bend, it is only noise. 
+The PCA algorithm builds many Principal Component (PC), but not all of the PC perform well in simplifying the information. To choose the correct number of PC to be kept, there are many conflicting methods. The one I recommend is the scree test (Cattell, 1966): graphical detection of a bend in the distribution of the successive variance explained. As a comparison, a PCA run on random data will not find *strong* PC, i.e. PC can not reduce the dimensionality of the data. On the contrary, in real world data, usually we have a bend between successive variance explained by PC. Before the bend, the PCs reduce well the dimensionality of the data and should be kept (i.e. there is a significant pattern); after the bend, PC should be discarded (i.e. it is only noise). 
 
 ![ ](figures/SelectPC.png)
 
@@ -228,12 +239,12 @@ pca_space=dudi.pca(IBTS_logspace, scale = TRUE, center = TRUE)
 
 ![](figures/unnamed-chunk-15-1.png)<!-- -->
 
-In our case, we see a bend in the scree plot after the second PC. So, **please type 2 and press Enter**.
+In our case, a bend can be seen on the scree plot after the second PC. So, **please type 2 and press Enter**.
 
 The function `inertia.dudi` show how much variance is explained by the successive PC.
 
 ```r
-#To see how much variance the axes explain :
+#To see how much variance the axes explain:
 inertia.dudi(pca_space)$TOT
 ```
 
@@ -249,7 +260,8 @@ inertia.dudi(pca_space)$TOT
 In our case, the first PC explains 41% of the variance, the two first PC together explain 62% of the variance.
 
 #### Interpretation of the PC.
-The variable `pca_space`, result of the `dudi.pca`, contains two important matrices : `co`with the projetion of columns in the two PC; and `li` with the projection of the raws in the two PCs. We can see the projection in a table directly by typing the name of these object, or by using graphical functions.
+The variable `pca_space`, result of the `dudi.pca`, contains two important matrices: `co`with the projetion of columns in the two PC; and `li` with the projection of the rows in the two PCs. **All PC kept in the analysis should be interpreted.**  
+We can see the projection in a table directly by typing the name of these object, or by using graphical function `s.label()`.
 
 ```r
 pca_space$li # or pca_space$co
@@ -268,20 +280,19 @@ pca_space$li # or pca_space$co
 
 ```r
 par(mfrow=c(1,2), mar=c(0,0,0,0))
-#Show the weight of the variables :
-s.label(pca_space$li, xax=1, yax=2) #on PC 1 and 2
-s.label(pca_space$co, clabel = 0.4) #on PC 1 and 2
+#Show the weight of the variables:
+s.label(pca_space$li, xax=1, yax=2)
+s.label(pca_space$co, xax=1, yax=2, clabel = 0.4)
 ```
 
 ![](figures/unnamed-chunk-17-1.png)<!-- -->
 
 The first PC (x-axis) make the difference between the northern NS (RA 1, 2 and 3 have negative weights, projected on the left side) and the southern NS (RA 5 and 6 have positive weights, projected on the right side).  
 The second PC (y-axis) make the difference between the South-Eastern NS (RA 7 have negative weight, projected on the lower side) and the rest of northern or western NS (RA 1 and 5 have positive weights, projected on the upper side).  
-The species projection (right side) allow us to see differences between species, but the high number of species makes it difficult to see the individual differences. One solution is to group these species,  simplify the number of species into smaller number of groups.
+The species projection (right side) allow us to see differences between species, but the high number of species makes it difficult to characterize the species. One solution is to group these species, i.e. simplify the number of species into a smaller number of groups, and then characterize these new groups.
 
 ### Clustering the species
-Clustering is a subject by itself, here we will only see one of its method : Hierarchical clustering.
-It works in 4 steps : 
+Clustering is a subject by itself, here we will only see quickly one of its most famous method: Hierarchical clustering. It works in 4 steps: 
 
 1. Compute the distances between each objects. 
 2. Build a tree according to a given joining criteria
@@ -309,9 +320,9 @@ rect.hclust(den, k=nclust, border="dimgrey")
 
 ![](figures/unnamed-chunk-18-1.png)<!-- -->
 
-There are different linkage criterions (criterion used to group, or split, two objects). The most common ones are: *Single* (minimum distance between elements of each cluster ), *Complete* (maximum distance between elements of each cluster), *Average* (mean distance between elements of each cluster, also called UPGMA) and *Ward* (decrease in variance for the cluster being merged). *Ward* linkage is known to be more suitable for spherical data, and in most of the case, gives the best results. I invite you to try other linkage criterions by changing the parameter `method = ` in the function `hclust`. Do you find the same clusters?  
+There are different linkage criteria (criterion used to group two objects). The most common ones are: *Single* (minimum distance between elements of each cluster), *Complete* (maximum distance between elements of each cluster), *Average* (mean distance between elements of each cluster, also called UPGMA) and *Ward* (decrease in variance for the cluster being merged). *Ward* linkage (Ward, 1963) is known to be more suitable for spherical data, and in most of the case, gives the best results. I invite you to try other linkage criteria by changing the parameter `method = ` in the function `hclust`. Do you find the same clusters?  
 
-In the above graph, the question is where to put a horizontal line on the dendogram to create the clusters. The number of clusters should not be too sensitive of the height of the bar. In our case, 5 clusters seem appropriate. We can now visualize how the hierarchical clustering grouped the species in 5 clusters on the two first PC.
+In the graph above, the question is where to put a horizontal line on the dendogram to create the clusters. The number of clusters should not be too sensitive of the height of the line. In our case, 5 clusters seem appropriate. We can now visualize how the hierarchical clustering grouped the species in 5 clusters on the two first PC.
 
 
 ```r
@@ -326,18 +337,18 @@ s.class(pca_space$co,fac=clust_space, col=rainbow(nclust),xax=1,yax=2)
 
 These clusters should be interpreted with the previous interpretation of the PC. For example, 
 
-* Cluster 1 (in red) has high value in PC1, and above average value in PC2. So it groups species that lives in the southern north sea (high PC1), with a preference in the south-western side (high PC2).  
+* Cluster 1 (in red) has high value in PC1, and above average value in PC2. So it groups species that lives in the southern North Sea (high PC1), with a preference in the south-western side (high PC2).  
 * Cluster 2  (in yellow in the graph above) groups species mainly located in entrance to the Skagerrak, RA7 (low PC2) but that can spread in the north (low PC1). This cluster is heterogeneous, with the largest ellipse in the figure above.  
 * Cluster 3 (in green) groups species mainly located in southern NS (high PC1), with a preference on its eastern side (low PC2).  
 
-### Your turn : 
+### Your turn: 
 1. How would you interpret the clusters 4 and 5 ?
-2. How many species are located mainly in the south-western (RA 5) of the north sea (i.e. grouped in cluster 1) ?
+2. How many species are located mainly in the south-west of the North Sea (RA 5, i.e. grouped in cluster 1) ?
 3. In which cluster is grouped Saithe (*Pollachius virens*)?
-4. Depending on your time and your interest, you can either : 
-    + change the initial matrix and run the same analysis, but categorizing species on their average temporal variation with the matrix defined as : `IBTS_time <- apply(IBTS_tensor,c(2,1),mean)`
+4. Depending on your time and your interest, you can either: 
+    + change the initial matrix and run the same analysis, but categorizing species on their temporal variation over the North Sea (averaged over RA) with the matrix defined as: `IBTS_time <- apply(IBTS_tensor,c(2,1),mean)`
     + change the linkage method in the clustering algorithm and compare the clusters
-    + or go directly to the next step : multivariate analysis in 3 dimension.
+    + or go directly to the next step: multivariate analysis in 3 dimension.
 
 #### Solution
 1. Cluster 4 (in blue) groups species spread exclusively in the northern NS (high PC1 and high PC2). Cluster 5 (in purple) groups species in majority either in the northern extremity (RA1) or the southwestern community (RA5) but not in RA 7 (high PC2)
@@ -368,7 +379,7 @@ Levels: 1 2 3 4 5
 
 ***
 
-## C. Three dimension : Tensor Decomposition
+## C. Three dimension: Tensor Decomposition
 
 ![ ](figures/3DPTA_illu.png)  
 
@@ -376,7 +387,7 @@ Levels: 1 2 3 4 5
 ### Preparing the dataset
 
 #### Checking the distribution of the data
-Like with PCA, we have to check the skewness of the data and log transform it if it is higly skewed.
+Like with PCA, we have to check the skewness of the data and log transform it if it is highly skewed.
 
 
 ```r
@@ -391,7 +402,7 @@ boxplot(IBTS_logtensor, main="log CPUE")
 ![](figures/unnamed-chunk-22-1.png)<!-- -->
 
 #### Scaling the data
-Contrary to PCA, the normalization of a tensor is not straightforward, and have to be done manually before running a PTA. Here, we decided to narmalized the values per species.
+Contrary to PCA, the normalization of a tensor is not straightforward, and have to be done manually before running a PTA. Here, we decided to normalize the values per species and saved them in a new tensor `IBTS_logscale`.
 
 
 ```r
@@ -412,11 +423,11 @@ dimnames(IBTS_logscale)<-dimnames(IBTS_tensor)
 
 ### Run a PTA
 #### Run the PTA and choosing the number of PT.
-The PTA is run with the function `PTA`. The number of principal tensor is indicated by `nbPT` and `nbPT2`
+The PTA is run with the function `PTA3`. The number of principal tensor is indicated by `nbPT` and `nbPT2`. One chooses the number of principal tensors at each *level* of analysis by `nbPT`, the last level (2-modes analysis) is fixed by `nbPT2`.  
 The Principal Tensor Analysis computed three main principal tensor and their two mode associated principal tensors.
 
 ```r
-PTA<-PTA3(IBTS_logscale, nbPT = 3, nbPT2 = 3, minpct = 0.1)
+pta<-PTA3(IBTS_logscale, nbPT = 3, nbPT2 = 3, minpct = 0.1)
 ```
 
 ```
@@ -427,11 +438,11 @@ PTA<-PTA3(IBTS_logscale, nbPT = 3, nbPT2 = 3, minpct = 0.1)
  ---Final iteration---  92 
  --Singular Value--  13.52781  -- Local Percent --  5.369746 % 
 
- -----Execution Time----- 0.475 
+ -----Execution Time----- 0.465 
 ```
 
 ```r
-summary.PTAk(PTA,testvar = 0)
+summary.PTAk(pta,testvar = 0)
 ```
 
 ```
@@ -473,55 +484,61 @@ To select the significant PT, we build the scree plot from the global variance e
 
 ```r
 #Create the scree plot
-out <- !substr(PTA[[3]]$vsnam, 1, 1) == "*"
-gct<-(PTA[[3]]$pct*PTA[[3]]$ssX/PTA[[3]]$ssX[1])[out]
+out <- !substr(pta[[3]]$vsnam, 1, 1) == "*"
+gct<-(pta[[3]]$pct*pta[[3]]$ssX/pta[[3]]$ssX[1])[out]
 barplot(sort(gct, decreasing = TRUE), xlab="PT",
         ylab="Percentage of variance")
 ```
 
 ![](figures/unnamed-chunk-25-1.png)<!-- -->
 
+A bend can be seen after 4 PT, so we will select the 4 PT with the best explaining power. Numerically, it corresponds to the PT 1, 6, 7 and 11 of our object `pta`
+
 ####Interpretation of PT.
-The ploting function per default allow to use the argument `mod` to select which dimension to plot, `nb1` and `nb2` to select which PT will be shown on x-axis and y-axis.
-For example, to see the time and space components projected on vs111 and vs222 :
+The plotting function per default allow to use the argument `mod` to select which dimension to plot, `nb1` and `nb2` to select which PT will be shown on x-axis and y-axis.
+For example, we plot the time and space components (the second and third dimension of the array, so `mod=c(2,3)`) projected on vs111 and vs222 (respectively the elements 1 and 11 of `pta`, so `nb1 = 1, nb2 = 11`):
 
 ```r
 par(mfrow=c(1,2))
-plot(PTA, mod=c(2,3), nb1 = 1, nb2 = 11, xpd=NA)
-plot(PTA, mod=1, nb1 = 1, nb2 = 11)
+plot(pta, mod=c(2,3), nb1 = 1, nb2 = 11, xpd=NA, lengthlabels = 4)
+plot(pta, mod=1, nb1 = 1, nb2 = 11, lengthlabels = 3)
 ```
 
 ![](figures/unnamed-chunk-26-1.png)<!-- -->
 
-You can explore further what are the main characteristics of the PT, which are number 1, 6, 7 and 11. Another way is to use a 2D representation of the projection
+We can see from the plot above that vs111 characterize the space (green crosses representing RA are spread over vs111) and vs222 characterize the time (red triangles representing years are spread over vs222).  
+vs111 makes the difference between the northern NS (RA 1, 2 and 3 have negative weights, projected on the left side) and the southern NS (RA 5 and 6 have positive weights, projected on the right side).  
+vs222 shows a temporal trend and makes the difference between the period 1985-1998 (years before 1998 have negative weights, projected on the lower side) and the recent period 2003-2015 (years after 2003 have positive weights, projected on the upper side).  
+The species projection (right side, created with `mod=1`) allow us to see the species plotted on these two PT. For example, we can see Cod (abbreviated *Gad*) in the upper part: it is the species with the strongest decrease in abundance (the highest point in vs222), and doesn't have clear spatial north-south pattern. However, the high number of species makes it difficult to characterize each species (suggesting the need for clustering).
+
+Similar plot can be done for the two other significant PT
 
 
 ```r
-#Define which PT have been selected
-keep <- c(1, 6, 7, 11)
-
-#Create the name of each PT
-labkeep <- paste0(paste0("PT", 1:4), " - ", 
-                  round((100 * (PTA[[3]]$d[keep])^2)/PTA[[3]]$ssX[1],1), "%")
-
-#Make the plot
-par(mfrow=c(2,2), mar = c(3,3,3,1))
-for (i in seq_along(keep)){
-  lab <- labkeep[i]
-  temp <- PTA[[3]]$v[keep[i],] %o% PTA[[2]]$v[keep[i],]
-  dimnames(temp) <- list(dimnames(IBTS_tensor)[[3]], dimnames(IBTS_tensor)[[2]])
-  myHeatmap(temp, pal="BrBG", title=lab, colscale = FALSE, mary = -3)
-}
+par(mfrow=c(2,2))
+plot(pta, mod=c(2,3), nb1 = 1, nb2 = 6, xpd=NA, lengthlabels = 4)
+plot(pta, mod=1, nb1 = 1, nb2 = 6, xpd=NA, lengthlabels = 4)
+plot(pta, mod=c(2,3), nb1 = 1, nb2 = 7, xpd=NA, lengthlabels = 4)
+plot(pta, mod=1, nb1 = 1, nb2 = 7, xpd=NA, lengthlabels = 4)
 ```
 
 ![](figures/unnamed-chunk-27-1.png)<!-- -->
+
+31vs111 are temporal mode PT associated with vs111, meaning that vs111 and 31vs111 share the same temporal component. This feature can be seen with the straight line representing the projection of the years on these PT. 
+
+Another way to represent the spatiotemporal variations of the PT is to use a 2D representation, with x-axis being the time and y-axis being the space. The graphical functions are out of scope of this tutorial but presented here to help the interpretation.
+
+![ ](figures/PTA_Inter.png)  
+
 
 ###Clustering
 We use the same approach as before, but with the species projected on the 4 PT.
 
 ```r
-#Create a variable with the projection of species on the 4 PT
-coo<-t(PTA[[1]]$v[c(keep),])
+#Create the matrix with the projection of species on the 4 PT
+keep <- c(1, 6, 7, 11) # PT that are kept in the analysis
+coo<-t(pta[[1]]$v[c(keep),])
+labkeep <- paste0(pta[[3]]$vsnam[keep], " - ", round((100 * (pta[[3]]$d[keep])^2)/pta[[3]]$ssX[1],1), "%")
 
 #1. Compute the distance between species
 dist1=dist(coo, method = "euclidean")
@@ -541,6 +558,8 @@ rect.hclust(den, k=nclust, border=rainbow(nclust)[c(6,5,2,4,3,1)])
 ```
 
 ![](figures/unnamed-chunk-28-1.png)<!-- -->
+
+The dendogram suggest to create 6 clusters. It is now important to interpret the clusters by projecting them on the PT.
 
 
 ```r
@@ -562,5 +581,30 @@ text(0,max(coo[,4])+0.02, labkeep[1], xpd=NA, cex=1.5)
 
 ![](figures/unnamed-chunk-29-1.png)<!-- -->
 
+* Cluster 1 is the southern community with high abundance in RA5 and no temporal pattern.
+* Cluster 2 is the community with decreasing abundance and no clear spatial pattern.
+* Cluster 3 is the South-East community with small increase in abondance
+* Cluster 4 is the northern community with high abundance in RA1 and no temporal trend.
+* Cluster 5 is the North-West community with a small increase in abondance
+* Cluster 6 is the increasing community, mainly pronounced in RA 1, 3 and 5
+
+![ ](figures/PTA_GroupInter.png)  
+
 ##Summary
+
+Multivariate analysis are methods to simplify complex and multidimensional dataset. The dimensions are simplified with the objective of keeping most of the variance. In this process, the information and the noise are separated; the main patterns being revealed by the principal components. Multivariate analysis are data-mining tools, in other words they are not predictive or mechanistic tools but data-driven. They can help to visualize and characterize what information is hidden in large dataset.
+
 ![ ](figures/Summary.png)
+
+
+##References
+
+Cattell, R. B. (1966). *The scree test for the number of factors.* Multivariate behavioral research,1(2), 245-276.
+
+Cichocki, A., Mandic, D., De Lathauwer, L., Zhou, G., Zhao, Q., Caiafa, C., & Phan, H. A. (2015). *Tensor decompositions for signal processing applications: From two-way to multiway component analysis.* IEEE Signal Processing Magazine, 32(2), 145-163.
+
+Leibovici, D. G. (2010). *Spatio-temporal multiway decompositions using principal tensor analysis on k-modes: The R package PTAk*. Journal of Statistical Software, 34(10), 1-34.
+
+Ward Jr, J. H. (1963). *Hierarchical grouping to optimize an objective function*. Journal of the American statistical association, 58(301): 236-244.
+
+
