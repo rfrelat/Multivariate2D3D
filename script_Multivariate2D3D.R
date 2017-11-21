@@ -1,6 +1,7 @@
-# From 2D PCA to 3D PTA : introduction to multivariate analysis
+# Introduction to multivariate analysis:  
+# from 2D principal component analysis to 3D tensor decomposition
 # author: Romain Frelat
-# date: 20 october 2016
+# date: 20 october 2016 (last updates : 21 november 2017)
 
 ## A. Getting ready ---------------------------------------
 
@@ -18,7 +19,7 @@ dimnames(IBTS_tensor)
 #Array
 dim(IBTS_tensor)
 IBTS_tensor[18,14,6]#Select one element, e.g. Abundance of Cod, in 1998, in RA6
-IBTS_tensor[18,,6]#Select one vector, e.g. abundance of Cod in 1998
+IBTS_tensor[18,14,]#Select one vector, e.g. abundance of Cod in 1998
 IBTS_tensor[18,,]#Select one matrix, e.g. abundance of Cod
 
 #List
