@@ -1,10 +1,9 @@
 ---
 title: 'Introduction to multivariate analysis:  from 2D PCA to 3D PTA'
 author: "Romain Frelat"
-date: '20 october 2016 (last updates : 21 november 2017)'
+date: '20 october 2016 (last updates : 14 december 2020)'
 output:
   html_document: null
-  keep_md: yes
   pdf_document: default
 ---
 
@@ -21,16 +20,20 @@ At the end of this tutorial, you should be able to:
 This tutorial was initially designed as a half-day workshop for the statistical roundtable at the Leibniz center for tropical marine ecology (ZMT), Bremen, Germany. It is now the companion tutorial of an article published in PlosOne :  
 Frelat R, Lindegren M, Dencker TS, Floeter J, Fock HO, Sguotti C, Stäbler M, Otto SA and Möllmann C (2017). *Community ecology in 3D: Tensor decomposition reveals spatio-temporal dynamics of large ecological communities*. PLoS ONE, 12(11): e0188205. https://doi.org/10.1371/journal.pone.0188205
 
-##A. Getting ready:
 
-###Get ready:
+**The tutorial has been updated on 14th December 2020 with R 4.0.2, ade4 v1.7-16 and PTAk v1.3-34.**
+
+
+## A. Getting ready:
+
+### Get ready:
 
 1. Download the zip file *Multivariate2D3D.zip* from [https://github.com/rfrelat/Multivariate2D3D/](https://github.com/rfrelat/Multivariate2D3D/raw/master/Multivariate2D3D.zip))
 2. Unzip the archive in a new folder. The zip file contain the data (*IBTS_Tensor.Rdata*), the R-script (*script_Multivariate2D3D.R*) and the present document as a pdf
 3. Open the R script *script_Multivariate2D3D.R* with your favourite R editor (RStudio is recommended)
 4. Set the working directory (Session > Set Working Directory) to the directory where the script and the data are located.
 
-###Load the package and needed functions
+### Load the package and needed functions
 During this tutorial, we will use two R-packages *ade4* and *PTAk*.
 ```{r, message=FALSE, fig.path='figures/'}
 library(ade4)
@@ -64,7 +67,7 @@ Abundance data comes from the ICES DAtabase for TRAwl Surveys ([DATRAS]( http://
 ### Understanding the variables
 While loading the data, we saw two different types of variables, quite unusual in R: `array` and `list`.
 
-####Array
+#### Array
 The object `IBTS_Tensor` is an `array`. Array is a generalization of matrix, with more than 2 dimensions. It can only contain numbers. The dimension of the array is given by the function `dim()`, and the different elements are accessed with `[ ]`, similar to a `matrix` or a `data.frame`.
 ```{r, comment ="", fig.path='figures/'}
 dim(IBTS_tensor)
@@ -78,7 +81,7 @@ IBTS_tensor[18,,] #Select one matrix, e.g. abundance of Cod
 head(IBTS_tensor[18,,])
 ```
 
-####List
+#### List
 The names of the dimensions of `IBTS_Tensor` are stored in a list. List can contain all kind of elements, without restriction on length or type (it can include elements of different lengths made of characters and numbers). The number of elements is given by function is `length()`, and the different elements are accessed by `[[ ]]`.
 
 ```{r, comment ="", fig.path='figures/'}
@@ -176,15 +179,15 @@ PCA algorithm create many Principal Component (PC), but not all PCs perform well
 ***
 
 ```{r, eval=FALSE, fig.path='figures/'}
-pca_space=dudi.pca(IBTS_logspace, scale = TRUE, center = TRUE)
+pca_space <- dudi.pca(IBTS_logspace, scale = TRUE, center = TRUE)
 ```
 
 **Select the number of axes: **
 
 ```{r, echo=FALSE, comment ="", fig.height=2, fig.width=4, fig.path='figures/'}
-pca_space=dudi.pca(IBTS_logspace, scannf = FALSE, nf=2)
+pca_space <- dudi.pca(IBTS_logspace, scannf = FALSE, nf=2)
 par(mar=c(0,4,0,0))
-barplot(inertia.dudi(pca_space)$TOT$inertia, ylab="Percentage of variance", xlab="PC")
+barplot(pca_space$eig/sum(pca_space$eig), ylab="Percentage of variance", xlab="PC")
 mtext("PC", side = 1, line=1)
 ```
 
@@ -193,7 +196,7 @@ In our case, a bend can be seen on the scree plot after the second PC. So, **ple
 The function `inertia.dudi` show how much variance is explained by the successive PC.
 ```{r, comment ="", fig.path='figures/'}
 #To see how much variance the axes explain:
-inertia.dudi(pca_space)$TOT
+inertia.dudi(pca_space)$tot
 ```
 In our case, the first PC explains 41% of the variance, the two first PC together explain 62% of the variance.
 
@@ -228,17 +231,17 @@ Clustering is a subject by itself, here we will only see quickly one of its most
 
 ```{r, comment ="", fig.path='figures/', fig.height=5, fig.width=6}
 #1. Compute the distance between species
-dist_species=dist(pca_space$co, method = "euclidean")
+dist_species <- dist(pca_space$co, method = "euclidean")
 
 #2. Build a tree with Ward method
-den=hclust(dist_species,method = "ward.D2")
+den <- hclust(dist_species,method = "ward.D2")
 
 #3. Plot the dendogram
 par(mar=c(2,3,3,1))
 plot(den, hang=-1, ax = T, ann=T, xlab="", sub="", cex=0.6)
 
 #Choosing the number of cluster
-nclust<-5
+nclust <- 5
 
 #Visualize the cutting
 rect.hclust(den, k=nclust, border="dimgrey")
@@ -312,7 +315,7 @@ Contrary to PCA, the normalization of a tensor is not straightforward, and have 
 ```{r, collapse=TRUE, comment ="", fig.path='figures/'}
 #Scaling per species
 #Create a new empty array
-IBTS_logscale<-array(0,dim=dim(IBTS_tensor))
+IBTS_logscale <- array(0,dim=dim(IBTS_tensor))
 #Loop scanning each species
 for (i in 1:dim(IBTS_tensor)[1]){
   #Calculating the mean and sd of the log CPUE for species i
@@ -330,7 +333,7 @@ dimnames(IBTS_logscale)<-dimnames(IBTS_tensor)
 The PTA is run with the function `PTA3`. The number of principal tensor is indicated by `nbPT` and `nbPT2`. One chooses the number of principal tensors at each *level* of analysis by `nbPT`, the last level (2-modes analysis) is fixed by `nbPT2`.  
 The Principal Tensor Analysis computed three main principal tensor and their two mode associated principal tensors.
 ```{r, comment ="", fig.path='figures/'}
-pta<-PTA3(IBTS_logscale, nbPT = 3, nbPT2 = 3, minpct = 0.1)
+pta <- PTA3(IBTS_logscale, nbPT = 3, nbPT2 = 3, minpct = 0.1)
 summary.PTAk(pta,testvar = 0)
 ```
 
@@ -340,7 +343,7 @@ To select the significant PT, we build the scree plot from the global variance e
 ```{r, comment ="", fig.path='figures/'}
 #Create the scree plot
 out <- !substr(pta[[3]]$vsnam, 1, 1) == "*"
-gct<-(pta[[3]]$pct*pta[[3]]$ssX/pta[[3]]$ssX[1])[out]
+gct <- (pta[[3]]$pct*pta[[3]]$ssX/pta[[3]]$ssX[1])[out]
 barplot(sort(gct, decreasing = TRUE), xlab="PT",
         ylab="Percentage of variance")
 ```
@@ -383,21 +386,21 @@ We use the same approach as before, but with the species projected on the 4 PT.
 ```{r, comment ="", fig.path='figures/'}
 #Create the matrix with the projection of species on the 4 PT
 keep <- c(1, 6, 7, 11) # PT that are kept in the analysis
-coo<-t(pta[[1]]$v[c(keep),])
+coo <- t(pta[[1]]$v[c(keep),])
 labkeep <- paste0(pta[[3]]$vsnam[keep], " - ", round((100 * (pta[[3]]$d[keep])^2)/pta[[3]]$ssX[1],1), "%")
 
 #1. Compute the distance between species
-dist1=dist(coo, method = "euclidean")
+dist1 <- dist(coo, method = "euclidean")
 
 #2. Build a tree with Ward linkage
-den=hclust(dist1,method = "ward.D2")
+den <- hclust(dist1,method = "ward.D2")
 
 #3. Plot the dendogram
 par(mar=c(1,3,1,1))
 plot(den, hang=-1, ax = T, ann=F, xlab="", sub="",labels = FALSE)
 
 #Choose the number of clusters
-nclust<-6
+nclust <- 6
 
 #Visualize the cutting
 rect.hclust(den, k=nclust, border=rainbow(nclust)[c(6,5,2,4,3,1)])
@@ -435,10 +438,10 @@ text(0,max(coo[,4])+0.02, labkeep[1], xpd=NA, cex=1.5)
 
 Multivariate analysis are methods to simplify complex and multidimensional data set. The dimensions are simplified with the objective of keeping most of the variance. In this process, the information and the noise are separated; the main patterns being revealed by the principal components. Multivariate analysis are data-mining tools, in other words they are not predictive or mechanistic tools but data-driven. They can help to visualize and characterize what information is hidden in large data set.
 
-![Summary of multivariate analysis in R: from 2D principal component analysis to 3D tensor decomposition ](figures/Summary.png){width=90%}
+![](figures/Summary.png){width=90%}
 
 
-##References
+## References
 
 Cattell, R. B. (1966). *The scree test for the number of factors.* Multivariate behavioral research,1(2), 245-276.
 

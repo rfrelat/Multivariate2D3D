@@ -79,7 +79,7 @@ pca_space=dudi.pca(IBTS_logspace, scale = TRUE, center = TRUE)
 # Please type 2
 
 #To see how much variance the axes explain:
-inertia.dudi(pca_space)$TOT
+inertia.dudi(pca_space)$tot
 
 #B.3 Interpretation of the PC.
 pca_space$li # or pca_space$co
